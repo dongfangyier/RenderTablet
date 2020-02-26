@@ -22,4 +22,21 @@
       <Filter>资源文件</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="myShader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="myMesh.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="myModel.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="myCamera.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
