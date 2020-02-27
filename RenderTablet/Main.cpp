@@ -83,8 +83,14 @@ int main()
 
 	// load models
 	// -----------
-	Model circleModel("Model/circle/circle.fbx");
-	Model capsuleModel("Model/capsule/capsule.obj");
+	Model circleModel("Model/circle/circle00.fbx");
+	Model capsuleModel00("Model/capsule/capsule00.fbx");
+	Model capsuleModel01("Model/capsule/capsule01.fbx");
+	Model capsuleModel02("Model/capsule/capsule02.fbx");
+	Model capsuleModel03("Model/capsule/capsule03.fbx");
+	Model boardModel("Model/board/board.fbx");
+
+
 
 
 
@@ -107,24 +113,56 @@ int main()
 
 		// render
 		// ------
-		glClearColor(0.1f, 0.5f, 0.1f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// render the loaded model
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
 		//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+		model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
 		pushValue2Shader(shader, model);
 		circleModel.Draw(shader);
 
 		// render the loaded model
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.0f, 3.0f, -2.0f));
-		model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::translate(model, glm::vec3(0.4f, 0.0f, 0.0f));
+		//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+		pushValue2Shader(shader, model);
+		capsuleModel00.Draw(shader);
+
+		// render the loaded model
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.8f, 0.0f, 0.0f));
+		//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+		pushValue2Shader(shader, model);
+		capsuleModel01.Draw(shader);
+
+		// render the loaded model
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-0.4f, 0.0f, 0.0f));
+		//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+		pushValue2Shader(shader, model);
+		capsuleModel02.Draw(shader);
+
+		// render the loaded model
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-0.8f, 0.0f, 0.0f));
+		//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+		pushValue2Shader(shader, model);
+		capsuleModel03.Draw(shader);
+
+		// render the loaded model
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, -0.3f, 0.0f));
+		model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
 		pushValue2Shader(shader, model);
-		capsuleModel.Draw(shader);
+		boardModel.Draw(shader);
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
@@ -212,8 +250,10 @@ void pushValue2Shader(Shader &shader, glm::mat4 model) {
 	shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
 	shader.setVec3("light.specular", 0.1f, 0.1f, 0.1f);
 	shader.setVec3("light.color", 1.0f, 1.0f, 1.0f);
-	shader.setVec3("light.position", 10.2f, 1000.0f, 10.0f);
-	shader.setVec3("viewPos", camera.Position);
+	shader.setVec3("light.position", 1.2f, 2.0f, 10.0f);
+	shader.setVec3("viewPos", camera.Position);	
+	shader.setFloat("shininess", 32.0f);
+
 }
 
 #pragma endregion

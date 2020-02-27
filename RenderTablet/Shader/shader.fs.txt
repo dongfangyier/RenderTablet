@@ -23,10 +23,9 @@ struct Light{
 };
 uniform Light light;
 uniform vec3 viewPos;
+uniform float shininess;
 void main()
 {    
-	float _shininess = 24;
-
 	// no textures
 	//Ambient = texture(texture_diffuse1, TexCoords);
 
@@ -35,7 +34,7 @@ void main()
 
 	vec3 _viewDir = normalize(viewPos - FragPos);
 	vec3 _reflectDir = normalize(reflect(-_lightDir, Normal));
-	float _specular = pow(max(dot(_reflectDir, _viewDir), 0.0), _shininess);
+	float _specular = pow(max(dot(_reflectDir, _viewDir), 0.0), shininess);
 
 
     //FragColor = texture(texture_diffuse1, TexCoords) + Diffuse;
