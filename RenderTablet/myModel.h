@@ -5,8 +5,10 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#define STB_IMAGE_IMPLEMENTATION
+
+#define STB_IMAGE_IMPLEMENTATION 
 #include "stb_image.h"
+
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -55,6 +57,7 @@ private:
 		// read file via ASSIMP
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+
 		// check for errors
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
 		{
@@ -66,6 +69,7 @@ private:
 
 		// process ASSIMP's root node recursively
 		processNode(scene->mRootNode, scene);
+
 	}
 
 	// processes a node in a recursive fashion. Processes each individual mesh located at the node and repeats this process on its children nodes (if any).
@@ -93,13 +97,12 @@ private:
 		vector<Vertex> vertices;
 		vector<unsigned int> indices;
 		vector<Texture> textures;
-
 		// Walk through each of the mesh's vertices
 		for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 		{
 			Vertex vertex;
 			glm::vec3 vector; // we declare a placeholder vector since assimp uses its own vector class that doesn't directly convert to glm's vec3 class so we transfer the data to this placeholder glm::vec3 first.
-			// positions
+							  // positions
 			vector.x = mesh->mVertices[i].x;
 			vector.y = mesh->mVertices[i].y;
 			vector.z = mesh->mVertices[i].z;
@@ -143,6 +146,20 @@ private:
 		}
 		// process materials
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+		Material mat;
+		aiColor3D color;
+
+		//读取mtl文件顶点数据
+
+		material->Get(AI_MATKEY_COLOR_AMBIENT, color);
+		mat.Ka = glm::vec4(color.r, color.g, color.b, 1.0);
+		material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+		mat.Kd = glm::vec4(color.r, color.g, color.b, 1.0);
+		material->Get(AI_MATKEY_COLOR_SPECULAR, color);
+		mat.Ks = glm::vec4(color.r, color.g, color.b, 1.0);
+
+
+
 		// we assume a convention for sampler names in the shaders. Each diffuse texture should be named
 		// as 'texture_diffuseN' where N is a sequential number ranging from 1 to MAX_SAMPLER_NUMBER. 
 		// Same applies to other texture as the following list summarizes:
@@ -164,7 +181,7 @@ private:
 		textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
 		// return a mesh object created from the extracted mesh data
-		return Mesh(vertices, indices, textures);
+		return Mesh(vertices, indices, textures, mat);
 	}
 
 	// checks all material textures of a given type and loads the textures if they're not loaded yet.

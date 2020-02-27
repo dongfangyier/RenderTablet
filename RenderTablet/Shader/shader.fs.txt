@@ -3,9 +3,41 @@ out vec4 FragColor;
 
 in vec2 TexCoords;
 
+// Material, read from file
+in vec4 Ambient;
+in vec4 Diffuse;
+in vec4 Specular;
+
+
 uniform sampler2D texture_diffuse1;
 
+// Light
+in vec3 Normal;
+in vec3 FragPos;
+struct Light{
+	vec3 color;
+	vec3 position;
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+};
+uniform Light light;
+uniform vec3 viewPos;
 void main()
 {    
-    FragColor = texture(texture_diffuse1, TexCoords);
+	float _shininess = 24;
+
+	// no textures
+	//Ambient = texture(texture_diffuse1, TexCoords);
+
+	vec3 _lightDir = normalize(light.position - FragPos);
+	float _diffuse = max(dot(Normal, _lightDir), 0.0);
+
+	vec3 _viewDir = normalize(viewPos - FragPos);
+	vec3 _reflectDir = normalize(reflect(-_lightDir, Normal));
+	float _specular = pow(max(dot(_reflectDir, _viewDir), 0.0), _shininess);
+
+
+    //FragColor = texture(texture_diffuse1, TexCoords) + Diffuse;
+	FragColor = vec4((light.ambient * Ambient.xyz + _diffuse * light.diffuse * Diffuse.xyz + _specular * light.specular * Specular.xyz) * light.color, 1.0);
 }

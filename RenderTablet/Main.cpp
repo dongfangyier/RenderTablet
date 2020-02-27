@@ -11,10 +11,13 @@
 
 #include <iostream>
 
+#pragma region
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
+
+void pushValue2Shader(Shader &shader, glm::mat4 model);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -29,6 +32,8 @@ bool firstMouse = true;
 // timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+
+#pragma endregion
 
 int main()
 {
@@ -54,11 +59,11 @@ int main()
 	}
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	glfwSetCursorPosCallback(window, mouse_callback);
+	//glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 
 	// tell GLFW to capture our mouse
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	// glad: load all OpenGL function pointers
 	// ---------------------------------------
@@ -74,11 +79,13 @@ int main()
 
 	// build and compile shaders
 	// -------------------------
-	Shader ourShader("Shader/shader.vs.txt", "Shader/shader.fs.txt");
+	Shader shader("Shader/shader.vs.txt", "Shader/shader.fs.txt");
 
 	// load models
 	// -----------
-	Model ourModel("Model/circle/circle.fbx");
+	Model circleModel("Model/circle/circle.fbx");
+	Model capsuleModel("Model/capsule/capsule.obj");
+
 
 
 	// draw in wireframe
@@ -100,25 +107,24 @@ int main()
 
 		// render
 		// ------
-		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
+		glClearColor(0.1f, 0.5f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		// don't forget to enable shader before setting uniforms
-		ourShader.use();
-
-		// view/projection transformations
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-		glm::mat4 view = camera.GetViewMatrix();
-		ourShader.setMat4("projection", projection);
-		ourShader.setMat4("view", view);
 
 		// render the loaded model
 		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f)); // translate it down so it's at the center of the scene
-		model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));	// it's a bit too big for our scene, so scale it down
-		ourShader.setMat4("model", model);
-		ourModel.Draw(ourShader);
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+		//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+		pushValue2Shader(shader, model);
+		circleModel.Draw(shader);
 
+		// render the loaded model
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.0f, 3.0f, -2.0f));
+		model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+		pushValue2Shader(shader, model);
+		capsuleModel.Draw(shader);
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
@@ -184,3 +190,30 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	camera.ProcessMouseScroll(yoffset);
 }
+
+#pragma region
+
+void pushValue2Shader(Shader &shader, glm::mat4 model) {
+	// don't forget to enable shader before setting uniforms
+	shader.use();
+
+	// view/projection transformations
+	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+	glm::mat4 view = camera.GetViewMatrix();
+	shader.setMat4("projection", projection);
+	shader.setMat4("view", view);
+
+
+	shader.setMat4("model", model);
+
+
+	// light properties
+	shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+	shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
+	shader.setVec3("light.specular", 0.1f, 0.1f, 0.1f);
+	shader.setVec3("light.color", 1.0f, 1.0f, 1.0f);
+	shader.setVec3("light.position", 10.2f, 1000.0f, 10.0f);
+	shader.setVec3("viewPos", camera.Position);
+}
+
+#pragma endregion
