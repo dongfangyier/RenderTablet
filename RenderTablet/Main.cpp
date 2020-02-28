@@ -250,9 +250,10 @@ void pushValue2Shader(Shader &shader, glm::mat4 model) {
 	shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
 	shader.setVec3("light.specular", 0.1f, 0.1f, 0.1f);
 	shader.setVec3("light.color", 1.0f, 1.0f, 1.0f);
-	shader.setVec3("light.position", 1.2f, 2.0f, 10.0f);
+	//shader.setVec3("light.position", 0.0f, 8.0f, 2.0f);
+	shader.setVec3("light.direction", 0.0f, 8.0f, 2.0f);
 	shader.setVec3("viewPos", camera.Position);	
-	shader.setFloat("shininess", 32.0f);
+	shader.setFloat("shininess", 16.0f);
 
 }
 
