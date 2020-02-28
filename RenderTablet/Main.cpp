@@ -17,6 +17,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 void load_models();
+void initRendering();
 
 void pushValue2Shader(Shader &shader, glm::mat4 model, glm::vec3 lightPos, glm::mat4 lightSpaceMatrix);
 void renderScene(const Shader &shader);
@@ -30,7 +31,7 @@ vector<Model> Models;
 vector<glm::mat4> models;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 0.5f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -68,11 +69,11 @@ int main()
 	}
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	//glfwSetCursorPosCallback(window, mouse_callback);
+	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 
 	// tell GLFW to capture our mouse
-	// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	// glad: load all OpenGL function pointers
 	// ---------------------------------------
@@ -84,8 +85,7 @@ int main()
 
 	// configure global opengl state
 	// -----------------------------
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_MULTISAMPLE);
+	initRendering();
 
 	// build and compile shaders
 	// -------------------------
@@ -96,7 +96,6 @@ int main()
 	// load models
 	// -----------
 	load_models();
-
 
 	// set up vertex data (and buffer(s)) and configure vertex attributes
 	// ------------------------------------------------------------------
@@ -389,5 +388,35 @@ void load_models() {
 	models.push_back(model);
 	Models.push_back(capsuleModel03);
 }
+
+// Initialize OpenGL's rendering modes
+void initRendering()
+{
+
+	glEnable(GL_DEPTH_TEST);
+
+	// Uncomment out the first block of code below, and then the second block,
+	//  to see how they affect line and point drawing.
+
+	// The following commands should cause points and line to be drawn larger
+	// than a single pixel width.
+	glPointSize(8);
+	glLineWidth(5);
+
+
+
+	// The following commands should induce OpenGL to create round points and 
+	// antialias points and lines.  (This is implementation dependent unfortunately).
+	//RGBA mode antialias need cooperate with blend function.
+	glEnable(GL_POINT_SMOOTH);
+	glEnable(GL_LINE_SMOOTH);
+	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST); // Make round points, not square points
+	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);  // Antialias the lines
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
+}
+
 
 #pragma endregion
