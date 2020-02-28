@@ -158,7 +158,7 @@ int main()
 
 	// lighting info
 	// -------------
-	glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
+	glm::vec3 lightPos(2.0f, 4.0f, 1.0f);
 
 	// draw in wireframe
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -313,8 +313,8 @@ void pushValue2Shader(Shader &shader, glm::mat4 model, glm::vec3 lightPos, glm::
 
 
 	// light properties
-	shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-	shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
+	shader.setVec3("light.ambient", 0.3f, 0.3f, 0.3f);
+	shader.setVec3("light.diffuse", 0.1f, 0.1f, 0.1f);
 	shader.setVec3("light.specular", 0.1f, 0.1f, 0.1f);
 	shader.setVec3("light.color", 1.0f, 1.0f, 1.0f);
 	shader.setVec3("light.position", lightPos);

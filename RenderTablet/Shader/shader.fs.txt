@@ -69,7 +69,7 @@ void main()
 	// no textures
 	//Ambient = texture(texture_diffuse1, TexCoords);
 
-	vec3 _lightDir = normalize(normalize(light.position) - FragPos);
+	vec3 _lightDir = normalize(light.position - FragPos);
 	float _diffuse = max(dot(Normal, _lightDir), 0.0);
 
 	vec3 _viewDir = normalize(viewPos - FragPos);
