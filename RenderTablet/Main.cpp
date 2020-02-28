@@ -330,7 +330,11 @@ void pushValue2Shader(Shader &shader, glm::mat4 model, glm::vec3 lightPos, glm::
 void renderScene(const Shader &shader)
 {
 	// floor
-	shader.setMat4("model", glm::mat4(1.0f));
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f, 0.4f, 0.0f));
+	//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	//model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+	shader.setMat4("model", model);
 	glBindVertexArray(planeVAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	// objects
@@ -352,35 +356,35 @@ void load_models() {
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(0.4f, 0.0f, 0.0f));
 	//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+	model = glm::scale(model, glm::vec3(0.03f, 0.03f, 0.03f));
 	models.push_back(model);
 	Models.push_back(circleModel);
 
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(-0.4f, 0.0f, 0.0f));
 	//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+	model = glm::scale(model, glm::vec3(0.03f, 0.03f, 0.03f));
 	models.push_back(model);
 	Models.push_back(capsuleModel00);
 
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(0.8f, 0.0f, 0.0f));
 	//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+	model = glm::scale(model, glm::vec3(0.03f, 0.03f, 0.03f));
 	models.push_back(model);
 	Models.push_back(capsuleModel01);
 
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(-0.8f, 0.0f, 0.0f));
 	//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+	model = glm::scale(model, glm::vec3(0.03f, 0.03f, 0.03f));
 	models.push_back(model);
 	Models.push_back(capsuleModel02);
 
 	model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
 	//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+	model = glm::scale(model, glm::vec3(0.03f, 0.03f, 0.03f));
 	models.push_back(model);
 	Models.push_back(capsuleModel03);
 }
