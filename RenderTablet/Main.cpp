@@ -16,12 +16,18 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
+void load_models();
 
-void pushValue2Shader(Shader &shader, glm::mat4 model);
+void pushValue2Shader(Shader &shader, glm::mat4 model, glm::vec3 lightPos, glm::mat4 lightSpaceMatrix);
+void renderScene(const Shader &shader);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+
+// objects
+vector<Model> Models;
+vector<glm::mat4> models;
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -34,6 +40,9 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 #pragma endregion
+
+// meshes
+unsigned int planeVAO;
 
 int main()
 {
@@ -80,19 +89,76 @@ int main()
 	// build and compile shaders
 	// -------------------------
 	Shader shader("Shader/shader.vs.txt", "Shader/shader.fs.txt");
+	Shader simpleDepthShader("Shader/simpleDepthShader.vs.txt", "Shader/simpleDepthShader.fs.txt");
+	Shader debugDepthQuad("Shader/quad.vs.txt", "Shader/quad.fs.txt");
 
 	// load models
 	// -----------
-	Model circleModel("Model/circle/circle00.fbx");
-	Model capsuleModel00("Model/capsule/capsule00.fbx");
-	Model capsuleModel01("Model/capsule/capsule01.fbx");
-	Model capsuleModel02("Model/capsule/capsule02.fbx");
-	Model capsuleModel03("Model/capsule/capsule03.fbx");
-	Model boardModel("Model/board/board.fbx");
+	load_models();
 
 
+	// set up vertex data (and buffer(s)) and configure vertex attributes
+	// ------------------------------------------------------------------
+	float planeVertices[] = {
+		// positions            // normals         // texcoords
+		 25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
+		-25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
+		-25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
+
+		 25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
+		-25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
+		 25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,  25.0f, 25.0f
+	};
+	// plane VAO
+	unsigned int planeVBO;
+	glGenVertexArrays(1, &planeVAO);
+	glGenBuffers(1, &planeVBO);
+	glBindVertexArray(planeVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glBindVertexArray(0);
 
 
+	// configure depth map FBO
+	// -----------------------
+	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+	unsigned int depthMapFBO;
+	glGenFramebuffers(1, &depthMapFBO);
+	// create depth texture
+	unsigned int depthMap;
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	// attach depth texture as FBO's depth buffer
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+	// shader configuration
+	// --------------------
+	shader.use();
+	shader.setInt("shadowMap", 1);
+	debugDepthQuad.use();
+	debugDepthQuad.setInt("depthMap", 0);
+
+	// lighting info
+	// -------------
+	glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 
 	// draw in wireframe
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -113,56 +179,55 @@ int main()
 
 		// render
 		// ------
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// render the loaded model
-		glm::mat4 model = glm::mat4(1.0f);
+		// 1. render depth of scene to texture (from light's perspective)
+		// --------------------------------------------------------------
+		glm::mat4 lightProjection, lightView;
+		glm::mat4 lightSpaceMatrix;
+		float near_plane = 1.0f, far_plane = 7.5f;
+		lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+		lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+		lightSpaceMatrix = lightProjection * lightView;
+		// render scene from light's point of view
+		simpleDepthShader.use();
+		simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		glActiveTexture(GL_TEXTURE0);
+		renderScene(simpleDepthShader);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		// reset viewport
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+		// 2. render scene as normal using the generated depth/shadow map  
+		// --------------------------------------------------------------
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glm::mat4 model;
+		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-		//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
-		pushValue2Shader(shader, model);
-		circleModel.Draw(shader);
-
-		// render the loaded model
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.4f, 0.0f, 0.0f));
-		//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
-		pushValue2Shader(shader, model);
-		capsuleModel00.Draw(shader);
-
-		// render the loaded model
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.8f, 0.0f, 0.0f));
-		//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
-		pushValue2Shader(shader, model);
-		capsuleModel01.Draw(shader);
-
-		// render the loaded model
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-0.4f, 0.0f, 0.0f));
-		//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
-		pushValue2Shader(shader, model);
-		capsuleModel02.Draw(shader);
-
-		// render the loaded model
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-0.8f, 0.0f, 0.0f));
-		//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
-		pushValue2Shader(shader, model);
-		capsuleModel03.Draw(shader);
-
-		// render the loaded model
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, -0.3f, 0.0f));
-		model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
-		pushValue2Shader(shader, model);
-		boardModel.Draw(shader);
+		pushValue2Shader(shader, model, lightPos, lightSpaceMatrix);
+
+		glActiveTexture(GL_TEXTURE0);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		renderScene(shader);
+
+		// render Depth map to quad for visual debugging
+		// ---------------------------------------------
+		debugDepthQuad.use();
+		debugDepthQuad.setFloat("near_plane", near_plane);
+		debugDepthQuad.setFloat("far_plane", far_plane);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
@@ -176,6 +241,7 @@ int main()
 	return 0;
 }
 
+#pragma region control
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow *window)
@@ -229,9 +295,12 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	camera.ProcessMouseScroll(yoffset);
 }
 
-#pragma region
+#pragma endregion
 
-void pushValue2Shader(Shader &shader, glm::mat4 model) {
+
+#pragma region functions
+
+void pushValue2Shader(Shader &shader, glm::mat4 model, glm::vec3 lightPos, glm::mat4 lightSpaceMatrix) {
 	// don't forget to enable shader before setting uniforms
 	shader.use();
 
@@ -240,8 +309,6 @@ void pushValue2Shader(Shader &shader, glm::mat4 model) {
 	glm::mat4 view = camera.GetViewMatrix();
 	shader.setMat4("projection", projection);
 	shader.setMat4("view", view);
-
-
 	shader.setMat4("model", model);
 
 
@@ -250,11 +317,72 @@ void pushValue2Shader(Shader &shader, glm::mat4 model) {
 	shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
 	shader.setVec3("light.specular", 0.1f, 0.1f, 0.1f);
 	shader.setVec3("light.color", 1.0f, 1.0f, 1.0f);
-	//shader.setVec3("light.position", 0.0f, 8.0f, 2.0f);
-	shader.setVec3("light.direction", 0.0f, 8.0f, 2.0f);
+	shader.setVec3("light.position", lightPos);
+	//shader.setVec3("light.direction", 0.0f, 8.0f, 2.0f);
 	shader.setVec3("viewPos", camera.Position);	
 	shader.setFloat("shininess", 16.0f);
+	shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
+}
+
+// renders the 3D scene
+// --------------------
+void renderScene(const Shader &shader)
+{
+	// floor
+	shader.setMat4("model", glm::mat4(1.0f));
+	glBindVertexArray(planeVAO);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	// objects
+	for (int i = 0; i < Models.size(); i++ ) {
+		shader.setMat4("model", models[i]);
+		Models[i].Draw(shader);
+	}
+
+}
+
+void load_models() {
+	Model circleModel("Model/circle/circle00.fbx");
+	Model capsuleModel00("Model/capsule/capsule00.fbx");
+	Model capsuleModel01("Model/capsule/capsule01.fbx");
+	Model capsuleModel02("Model/capsule/capsule02.fbx");
+	Model capsuleModel03("Model/capsule/capsule03.fbx");
+
+	glm::mat4 model;
+	model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.4f, 0.0f, 0.0f));
+	//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+	models.push_back(model);
+	Models.push_back(circleModel);
+
+	model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(-0.4f, 0.0f, 0.0f));
+	//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+	models.push_back(model);
+	Models.push_back(capsuleModel00);
+
+	model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.8f, 0.0f, 0.0f));
+	//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+	models.push_back(model);
+	Models.push_back(capsuleModel01);
+
+	model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(-0.8f, 0.0f, 0.0f));
+	//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+	models.push_back(model);
+	Models.push_back(capsuleModel02);
+
+	model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+	//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+	models.push_back(model);
+	Models.push_back(capsuleModel03);
 }
 
 #pragma endregion
