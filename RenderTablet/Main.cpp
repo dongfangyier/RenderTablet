@@ -8,10 +8,10 @@
 #include "myShader.h"
 #include "myCamera.h"
 #include "myModel.h"
-
+#include <windows.h>
 #include <iostream>
 
-#pragma region
+#pragma region attribute
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -19,7 +19,7 @@ void processInput(GLFWwindow *window);
 void load_models();
 void initRendering();
 
-void pushValue2Shader(Shader &shader, glm::mat4 model, glm::vec3 lightPos, glm::mat4 lightSpaceMatrix);
+void pushValue2Shader(Shader &shader, glm::mat4 model, glm::mat4 lightSpaceMatrix);
 void renderScene(const Shader &shader);
 
 // settings
@@ -36,14 +36,21 @@ float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
+// lighting info
+glm::vec3 lightPos(1.0f, 2.0f, 0.5f);
+
+
 // timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-#pragma endregion
-
 // meshes
 unsigned int planeVAO;
+
+void random_camera();
+void random_lightPos();
+float get_random_number(int minValue, int maxValue);
+#pragma endregion
 
 int main()
 {
@@ -156,10 +163,6 @@ int main()
 	debugDepthQuad.use();
 	debugDepthQuad.setInt("depthMap", 0);
 
-	// lighting info
-	// -------------
-	glm::vec3 lightPos(1.0f, 2.0f, 0.5f);
-
 	// draw in wireframe
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -214,7 +217,7 @@ int main()
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
-		pushValue2Shader(shader, model, lightPos, lightSpaceMatrix);
+		pushValue2Shader(shader, model, lightSpaceMatrix);
 
 		glActiveTexture(GL_TEXTURE0);
 		glActiveTexture(GL_TEXTURE1);
@@ -233,6 +236,16 @@ int main()
 		// -------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+
+		// random
+		random_camera();
+		//random_lightPos();
+		Sleep(2000);
+
+		shader.use();
+		shader.setInt("shadowMap", 1);
+		debugDepthQuad.use();
+		debugDepthQuad.setInt("depthMap", 0);
 	}
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
@@ -300,7 +313,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 #pragma region functions
 
-void pushValue2Shader(Shader &shader, glm::mat4 model, glm::vec3 lightPos, glm::mat4 lightSpaceMatrix) {
+void pushValue2Shader(Shader &shader, glm::mat4 model, glm::mat4 lightSpaceMatrix) {
 	// don't forget to enable shader before setting uniforms
 	shader.use();
 
@@ -329,19 +342,21 @@ void pushValue2Shader(Shader &shader, glm::mat4 model, glm::vec3 lightPos, glm::
 // --------------------
 void renderScene(const Shader &shader)
 {
+	// objects
+	for (int i = 0; i < Models.size(); i++ ) {
+		shader.setMat4("model", models[i]);
+		Models[i].Draw(shader);
+	}
+
 	// floor
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(0.0f, 0.4f, 0.0f));
 	//model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	//model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
 	shader.setMat4("model", model);
+	shader.setVec3("light.specular", 0.1f, 0.1f, 0.1f);
 	glBindVertexArray(planeVAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-	// objects
-	for (int i = 0; i < Models.size(); i++ ) {
-		shader.setMat4("model", models[i]);
-		Models[i].Draw(shader);
-	}
 
 }
 
@@ -415,6 +430,58 @@ void initRendering()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+}
+
+
+void random_camera()
+{
+	float x = get_random_number(1, 3);
+	float y = get_random_number(1, 4);
+	float z = get_random_number(1, 3);
+
+	float tagx = get_random_number(-2, 2);
+	if (tagx < 0) {
+		x = -x;
+	}
+
+	float tagz = get_random_number(-2, 2);
+	if (tagz < 0) {
+		z = -z;
+	}
+
+	float pitch;
+	pitch = get_random_number(-50, -50);
+
+	float yaw;
+	if (z >= 0 && x <= 0) {
+		yaw = get_random_number(-60, -30);
+	}
+	else if (z >= 0 && x >= 0) {
+		yaw = get_random_number(210, 240);
+	}
+	else if (z <= 0 && x >= 0) {
+		yaw = get_random_number(120, 150);
+	}
+	else if (z <= 0 && x <= 0) {
+		yaw = get_random_number(30, 60);
+	}
+	camera.Position = glm::vec3(x, y, z);
+	camera.Pitch = pitch;
+	camera.Yaw = yaw;
+	camera.updateCameraVectors();
+}
+
+void random_lightPos() 
+{
+	float x = get_random_number(-1, 1);
+	float z = get_random_number(-1, 1);
+	lightPos = glm::vec3(x, lightPos.y, z);
+}
+
+float get_random_number(int minValue, int maxValue) {
+	minValue *= 10;
+	maxValue *=10;
+	return ((rand() %(maxValue - minValue + 1)) + minValue) / 10;
 }
 
 
