@@ -23,8 +23,8 @@ void pushValue2Shader(Shader &shader, glm::mat4 model, glm::vec3 lightPos, glm::
 void renderScene(const Shader &shader);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1200;
+const unsigned int SCR_HEIGHT = 700;
 
 // objects
 vector<Model> Models;
@@ -158,7 +158,7 @@ int main()
 
 	// lighting info
 	// -------------
-	glm::vec3 lightPos(2.0f, 4.0f, 1.0f);
+	glm::vec3 lightPos(1.0f, 2.0f, 0.5f);
 
 	// draw in wireframe
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -313,9 +313,9 @@ void pushValue2Shader(Shader &shader, glm::mat4 model, glm::vec3 lightPos, glm::
 
 
 	// light properties
-	shader.setVec3("light.ambient", 0.3f, 0.3f, 0.3f);
-	shader.setVec3("light.diffuse", 0.1f, 0.1f, 0.1f);
-	shader.setVec3("light.specular", 0.1f, 0.1f, 0.1f);
+	shader.setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
+	shader.setVec3("light.diffuse", 1.0f, 1.0f, 1.0f);
+	shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 	shader.setVec3("light.color", 1.0f, 1.0f, 1.0f);
 	shader.setVec3("light.position", lightPos);
 	//shader.setVec3("light.direction", 0.0f, 8.0f, 2.0f);
@@ -414,7 +414,6 @@ void initRendering()
 	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);  // Antialias the lines
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 
 }
 

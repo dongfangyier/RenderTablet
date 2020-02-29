@@ -33,6 +33,6 @@ void main()
 	Ambient = aAmbient;
 	Diffuse = aDiffuse;
 	Specular = aSpecular;
-	Normal = mat3(transpose(inverse(model))) * aNormal;
+	Normal = normalize(mat3(transpose(inverse(model))) * aNormal);
 	FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
 }
